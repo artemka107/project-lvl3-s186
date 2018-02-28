@@ -1,10 +1,7 @@
-import axios from 'axios';
-import httpAdapter from 'axios/lib/adapters/http';
 import url from 'url';
 import path from 'path';
 import fs from 'mz/fs';
-
-axios.defaults.adapter = httpAdapter;
+import axios from './lib/axios';
 
 const loader = (urlPath, dir) => {
   const { host, pathname } = url.parse(urlPath);
@@ -23,10 +20,9 @@ const loader = (urlPath, dir) => {
       };
       return response;
     })
-    .then((res) => {
-      fs.writeFile(filePath, res.data);
-      return res;
-    });
+    .then(res =>
+      fs.writeFile(filePath, res.data)
+        .then(() => res));
 };
 
 

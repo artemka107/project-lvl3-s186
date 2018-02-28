@@ -10,6 +10,7 @@ const url = 'http://myservertest.com';
 
 describe('download page', () => {
   let currentDir;
+  let defaultDir;
   const tmpdir = os.tmpdir();
 
   beforeEach(() =>
@@ -17,6 +18,14 @@ describe('download page', () => {
       .then((dir) => {
         currentDir = '';
         currentDir += dir;
+      }));
+
+  afterAll(() =>
+    fs.exists(defaultDir)
+      .then(() => {
+        if (defaultDir) {
+          fs.unlink(defaultDir);
+        }
       }));
 
   test('test connect', async () => {
@@ -40,6 +49,7 @@ describe('download page', () => {
       .get('/')
       .reply(200, 'test done');
     const response = await loader(url);
+    defaultDir = response.path;
     expect(fs.readFile(response.path, 'utf8')).resolves.toBe('test done');
   });
 });
