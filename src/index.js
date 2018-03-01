@@ -7,21 +7,29 @@ import axios from './lib/axios';
 const generateName = (str, extFile) => {
   const { dir, name, ext } = path.parse(str);
   return path.join(dir, name)
-    .split(new RegExp(/\W/))
+    .split(/\W/)
     .filter(e => e !== '')
     .join('-')
     .concat(extFile || ext);
 };
 
 const findResourses = (file) => {
+  const tags = {
+    script: 'src',
+    link: 'href',
+    img: 'src',
+  };
+
   const $ = cheerio.load(file);
   return $('html')
-    .find('[src], [href]')
+    .find(Object.keys(tags)
+      .map(name => `${name}[${tags[name]}]`)
+      .join(','))
     .map((i, elem) => {
       const { href, src } = elem.attribs;
       return href || src;
     })
-    .filter((i, elem) => path.isAbsolute(elem))
+    .filter((i, elem) => !elem.match(/^http/))
     .toArray();
 };
 
@@ -55,7 +63,8 @@ const loader = (urlPath, dir = path.resolve()) => {
     .then(() => fs.readFile(filePath))
     .then(file => findResourses(file))
     .then(resourses => getData(resourses))
-    .then(res => saveData(res));
+    .then(res => saveData(res))
+    .catch(e => console.log(`Error was happend with code ${e.code}`));
 };
 
 

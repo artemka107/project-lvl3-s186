@@ -27,11 +27,10 @@ describe('download page', () => {
       }));
 
   test('download page and with resourses', async () => {
-    let data;
-    let amountOfFiles;
     const responseHtml = await fs.readFile(pathToHtml, 'utf8');
     const file = await fs.readFile(path.join(testFilesPath, 'file.css'));
     const pathToFilesDir = path.join(currentDir, dirPageFiles);
+
     nock(url)
       .get('/')
       .reply(200, responseHtml)
@@ -41,13 +40,11 @@ describe('download page', () => {
       .reply(200, 'test data')
       .get(getPathToResourse('file'))
       .reply(200, 'test data');
+
     await loader(url, currentDir);
-    try {
-      data = await fs.readFile(path.join(currentDir, dirPageFiles, fileName));
-      amountOfFiles = await fs.readdir(pathToFilesDir);
-    } catch (e) {
-      // done
-    }
+    const data = await fs.readFile(path.join(currentDir, dirPageFiles, fileName));
+    const amountOfFiles = await fs.readdir(pathToFilesDir);
+
     expect(amountOfFiles.length).toBe(3);
     expect(data).toEqual(file);
   });
