@@ -1,16 +1,24 @@
 import url from 'url';
+import d from 'debug';
 import path from 'path';
 import fs from 'mz/fs';
 import cheerio from 'cheerio';
 import axios from './lib/axios';
 
+const debug = {
+  resourses: d('page-loader:resourses'),
+  http: d('page-loader:http'),
+  dirs: d('page-loader:dirs'),
+};
+
 const generateName = (str, extFile) => {
   const { dir, name, ext } = path.parse(str);
-  return path.join(dir, name)
+  const result = path.join(dir, name)
     .split(/\W/)
     .filter(e => e !== '')
     .join('-')
     .concat(extFile || ext);
+  return result;
 };
 
 
@@ -22,7 +30,7 @@ const findResourses = (file) => {
   };
 
   const $ = cheerio.load(file);
-  return $('html')
+  const resourses = $('html')
     .find(Object.keys(tags)
       .map(name => `${name}[${tags[name]}]`)
       .join(','))
@@ -32,6 +40,10 @@ const findResourses = (file) => {
     })
     .filter((i, elem) => !elem.match(/^http/))
     .toArray();
+
+  debug.resourses(resourses.map(e => e).join('\n'));
+
+  return resourses;
 };
 
 const loader = (urlPath, dir = path.resolve()) => {
@@ -45,16 +57,22 @@ const loader = (urlPath, dir = path.resolve()) => {
         responseType: 'arraybuffer',
       }));
     return Promise.all(queries).then(response =>
-      response.map((res, i) => ({ path: resourses[i], data: res.data })));
+      response.map((res, i) => {
+        debug.http(`${resourses[i]} was ended with STATUS ${res.status}`);
+        return { path: resourses[i], data: res.data };
+      }));
   };
 
-  const saveData = data =>
-    fs.mkdir(path.join(dir, generateName(siteName, '_files')))
+  const saveData = (data) => {
+    const dirForFiles = path.join(dir, generateName(siteName, '_files'));
+    debug.dirs(dirForFiles, 'directory for files');
+    return fs.mkdir(dirForFiles)
       .then(() =>
         Promise.all(data.map((elem) => {
-          const pathToFile = path.join(dir, generateName(siteName, '_files'), generateName(elem.path));
+          const pathToFile = path.join(dirForFiles, generateName(elem.path));
           return fs.writeFile(pathToFile, elem.data);
         })));
+  };
 
   const pageName = generateName(`${host}/${pathname}`, '.html');
   const filePath = path.join(dir, pageName);
