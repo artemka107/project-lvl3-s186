@@ -13,6 +13,7 @@ const generateName = (str, extFile) => {
     .concat(extFile || ext);
 };
 
+
 const findResourses = (file) => {
   const tags = {
     script: 'src',
@@ -26,8 +27,8 @@ const findResourses = (file) => {
       .map(name => `${name}[${tags[name]}]`)
       .join(','))
     .map((i, elem) => {
-      const { href, src } = elem.attribs;
-      return href || src;
+      const attr = tags[elem.name];
+      return elem.attribs[attr];
     })
     .filter((i, elem) => !elem.match(/^http/))
     .toArray();
