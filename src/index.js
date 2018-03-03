@@ -5,11 +5,24 @@ import fs from 'mz/fs';
 import cheerio from 'cheerio';
 import axios from './lib/axios';
 
-const debug = {
-  resourses: d('page-loader:resourses'),
-  http: d('page-loader:http'),
-  dirs: d('page-loader:dirs'),
-};
+const debug = d('page-loader:all');
+
+const errors = [
+  {
+    check: error => error.response,
+    message: (e) => {
+      console.error(`Sorry, current url ${e.config.url} is not available. Status ${e.response.status}`);
+      return e;
+    },
+  },
+  {
+    check: error => error.syscall,
+    message: (e) => {
+      console.error(e.message);
+      return e.errno;
+    },
+  },
+];
 
 const generateName = (str, extFile) => {
   const { dir, name, ext } = path.parse(str);
@@ -41,7 +54,7 @@ const findResourses = (file) => {
     .filter((i, elem) => !elem.match(/^http/))
     .toArray();
 
-  debug.resourses(resourses.map(e => e).join('\n'));
+  debug(resourses.map(e => e).join('\n'));
 
   return resourses;
 };
@@ -56,16 +69,17 @@ const loader = (urlPath, dir = path.resolve()) => {
         baseURL: urlPath,
         responseType: 'arraybuffer',
       }));
-    return Promise.all(queries).then(response =>
-      response.map((res, i) => {
-        debug.http(`${resourses[i]} was ended with STATUS ${res.status}`);
-        return { path: resourses[i], data: res.data };
-      }));
+    return Promise.all(queries)
+      .then(response =>
+        response.map((res, i) => {
+          debug(`${resourses[i]} was ended with STATUS ${res.status}`);
+          return { path: resourses[i], data: res.data };
+        }));
   };
 
   const saveData = (data) => {
     const dirForFiles = path.join(dir, generateName(siteName, '_files'));
-    debug.dirs(dirForFiles, 'directory for files');
+    debug(dirForFiles, 'directory for files');
     return fs.mkdir(dirForFiles)
       .then(() =>
         Promise.all(data.map((elem) => {
@@ -83,7 +97,8 @@ const loader = (urlPath, dir = path.resolve()) => {
     .then(file => findResourses(file))
     .then(resourses => getData(resourses))
     .then(res => saveData(res))
-    .catch(e => console.log(`Error was happend with code ${e.code}`));
+    .catch(e =>
+      errors.find(({ check }) => check(e)).message(e));
 };
 
 

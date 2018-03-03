@@ -10,7 +10,8 @@ const getPathToResourse = name =>
   path.join('/assets/', name);
 
 const testFilesPath = '__tests__/fixtures/';
-const pathToHtml = '__tests__/fixtures/resourse.html';
+const pathToEmptyHtml = `${testFilesPath}empty.html`;
+const pathToHtml = `${testFilesPath}resourse.html`;
 const url = 'https://myservertest.com/courses/';
 const dirPageFiles = 'myservertest-com-courses_files/';
 const fileName = 'assets-file.png';
@@ -47,5 +48,38 @@ describe('download page', () => {
 
     expect(amountOfFiles.length).toBe(3);
     expect(data).toEqual(file);
+  });
+
+  test('should be with error', async () => {
+    const newUrl = `${url}errorpath/`;
+    nock(newUrl)
+      .get('/')
+      .reply(404);
+
+    const result = await loader(newUrl, currentDir);
+    expect(result).toBeInstanceOf(Error);
+  });
+
+  test('should be with error exist dir', async () => {
+    const responseHtml = await fs.readFile(pathToEmptyHtml, 'utf8');
+
+    nock(url)
+      .get('/')
+      .reply(200, responseHtml);
+
+    await fs.mkdir(path.join(currentDir, dirPageFiles));
+    const errno = await loader(url, currentDir);
+    expect(errno).toBe(-17);
+  });
+
+  test('should be with error does not exist dir', async () => {
+    const responseHtml = await fs.readFile(pathToEmptyHtml, 'utf8');
+
+    nock(url)
+      .get('/')
+      .reply(200, responseHtml);
+
+    const errno = await loader(url, path.join(currentDir, 'errorpath'));
+    expect(errno).toBe(-2);
   });
 });
