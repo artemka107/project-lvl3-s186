@@ -56,8 +56,12 @@ describe('download page', () => {
       .get('/')
       .reply(404);
 
-    const result = await loader(newUrl, currentDir);
-    expect(result).toBeInstanceOf(Error);
+    try {
+      await loader(newUrl, currentDir);
+      expect(false).toBe(true);
+    } catch (e) {
+      expect(e.message).toBe('Request failed with status code 404');
+    }
   });
 
   test('should be with error exist dir', async () => {
@@ -67,9 +71,13 @@ describe('download page', () => {
       .get('/')
       .reply(200, responseHtml);
 
-    await fs.mkdir(path.join(currentDir, dirPageFiles));
-    const errno = await loader(url, currentDir);
-    expect(errno).toBe(-17);
+    try {
+      await fs.mkdir(path.join(currentDir, dirPageFiles));
+      await loader(url, currentDir);
+      expect(false).toBe(true);
+    } catch (e) {
+      expect(e.message).toMatch(/^EEXIST/);
+    }
   });
 
   test('should be with error does not exist dir', async () => {
@@ -79,7 +87,11 @@ describe('download page', () => {
       .get('/')
       .reply(200, responseHtml);
 
-    const errno = await loader(url, path.join(currentDir, 'errorpath'));
-    expect(errno).toBe(-2);
+    try {
+      await loader(url, path.join(currentDir, 'errorpath'));
+      expect(false).toBe(true);
+    } catch (e) {
+      expect(e.message).toMatch(/^ENOENT/);
+    }
   });
 });

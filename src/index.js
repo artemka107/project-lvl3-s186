@@ -7,23 +7,6 @@ import axios from './lib/axios';
 
 const debug = d('page-loader:all');
 
-const errors = [
-  {
-    check: error => error.response,
-    message: (e) => {
-      console.error(`Sorry, current url ${e.config.url} is not available. Status ${e.response.status}`);
-      return e;
-    },
-  },
-  {
-    check: error => error.syscall,
-    message: (e) => {
-      console.error(e.message);
-      return e.errno;
-    },
-  },
-];
-
 const generateName = (str, extFile) => {
   const { dir, name, ext } = path.parse(str);
   const result = path.join(dir, name)
@@ -97,8 +80,9 @@ const loader = (urlPath, dir = path.resolve()) => {
     .then(file => findResourses(file))
     .then(resourses => getData(resourses))
     .then(res => saveData(res))
-    .catch(e =>
-      errors.find(({ check }) => check(e)).message(e));
+    .catch((e) => {
+      throw new Error(e.message);
+    });
 };
 
 

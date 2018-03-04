@@ -8,6 +8,7 @@ program
   .description('download web page')
   .option('-o, --output [dir]', 'output data directory')
   .action((path, cmd) =>
-    loader(path, cmd.output));
+    loader(path, cmd.output)
+      .catch(e => console.error(e.message)));
 
 program.parse(process.argv);
