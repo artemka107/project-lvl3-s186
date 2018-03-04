@@ -1,4 +1,5 @@
 import url from 'url';
+import Listr from 'listr';
 import d from 'debug';
 import path from 'path';
 import fs from 'mz/fs';
@@ -17,6 +18,33 @@ const generateName = (str, extFile) => {
   return result;
 };
 
+
+const getData = (resourses, urlPath) => {
+  const queries = resourses.map(resourse =>
+    ({
+      title: path.join(urlPath, resourse),
+      task: (ctx) => {
+        const result = axios.get(resourse, {
+          baseURL: urlPath,
+          responseType: 'arraybuffer',
+        });
+        ctx.push(result);
+        return result;
+      },
+    }));
+
+  const extractData = data =>
+    Promise.all(data)
+      .then(response =>
+        response.map((res, i) => {
+          debug(`${resourses[i]} was ended with STATUS ${res.status}`);
+          return { path: resourses[i], data: res.data };
+        }));
+
+  const tasks = new Listr(queries);
+  return tasks.run([])
+    .then(ctx => extractData(ctx));
+};
 
 const findResourses = (file) => {
   const tags = {
@@ -46,20 +74,6 @@ const loader = (urlPath, dir = path.resolve()) => {
   const { host, pathname } = url.parse(urlPath);
   const siteName = path.join(host, pathname);
 
-  const getData = (resourses) => {
-    const queries = resourses.map(resourse =>
-      axios.get(resourse, {
-        baseURL: urlPath,
-        responseType: 'arraybuffer',
-      }));
-    return Promise.all(queries)
-      .then(response =>
-        response.map((res, i) => {
-          debug(`${resourses[i]} was ended with STATUS ${res.status}`);
-          return { path: resourses[i], data: res.data };
-        }));
-  };
-
   const saveData = (data) => {
     const dirForFiles = path.join(dir, generateName(siteName, '_files'));
     debug(dirForFiles, 'directory for files');
@@ -78,7 +92,7 @@ const loader = (urlPath, dir = path.resolve()) => {
     .then(res => fs.writeFile(filePath, res.data))
     .then(() => fs.readFile(filePath))
     .then(file => findResourses(file))
-    .then(resourses => getData(resourses))
+    .then(resourses => getData(resourses, urlPath))
     .then(res => saveData(res))
     .catch((e) => {
       throw new Error(e.message);

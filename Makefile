@@ -7,7 +7,7 @@ publish:
 lint:
 	npm run eslint .
 run:
-	npm run babel-node -- src/bin/pageLoader.js --output /tmp https://hexlet.io
+	npm run babel-node -- src/bin/pageLoader.js --output /tmp https://artemka107.github.io/mishka/
 debug:
 	DEBUG=page-loader:* npm run babel-node -- src/bin/pageLoader.js --output /tmp https://artemka107.github.io/mishka/
 test:
