@@ -93,10 +93,7 @@ const loader = (urlPath, dir = path.resolve()) => {
     .then(() => fs.readFile(filePath))
     .then(file => findResourses(file))
     .then(resourses => getData(resourses, urlPath))
-    .then(res => saveData(res))
-    .catch((e) => {
-      throw new Error(e.message);
-    });
+    .then(res => saveData(res));
 };
 
 
